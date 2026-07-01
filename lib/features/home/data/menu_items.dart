@@ -47,6 +47,14 @@ const homeMenuItems = <MenuItemModel>[
     fallbackIcon: Icons.family_restroom,
   ),
   MenuItemModel(
+    id: 'navigasi-indoor',
+    label: 'Navigasi Indoor',
+    iconAsset: 'assets/icons/menu/navigasi_indoor.png',
+    actionType: MenuActionType.native,
+    routeName: 'darsi-navigation',
+    fallbackIcon: Icons.explore,
+  ),
+  MenuItemModel(
     id: 'billing',
     label: 'Billing Rawat Inap',
     iconAsset: 'assets/icons/menu/billing.png',

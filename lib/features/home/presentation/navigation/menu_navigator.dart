@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:rs_islam_app/features/darsi/darsi_navigation_screen.dart';
 import 'package:rs_islam_app/features/home/data/models/menu_item_model.dart';
 import 'package:rs_islam_app/features/home/presentation/screens/webview_screen.dart';
 
@@ -20,6 +21,13 @@ abstract final class MenuNavigator {
         );
       case MenuActionType.native:
         final route = item.routeName;
+        if (route == 'darsi-navigation') {
+          return Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => const DarsiNavigationScreen(),
+            ),
+          );
+        }
         if (route == null || route.isEmpty) {
           return _showSnack(context, 'Route belum dikonfigurasi.');
         }
