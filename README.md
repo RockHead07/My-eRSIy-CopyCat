@@ -1,6 +1,14 @@
+<div align="center">
+
 # rs_islam_app
 
 A new Flutter project.
+or...
+You might need to say, that this is a copycat of My eRSIy <href="https://play.google.com/store/apps/details?id=id.kksoft.myrsiy&hl=id"> app! 
+
+<img width="360" alt="Image" src="https://github.com/user-attachments/assets/8c95be2a-c2e4-4ae0-a040-7a157d370356" />
+
+</div>
 
 ## Getting Started
 
