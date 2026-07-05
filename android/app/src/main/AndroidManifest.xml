@@ -1,9 +1,13 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
     <application
         android:label="rs_islam_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        tools:replace="android:icon,android:label"><!-- dev only: lets WebView load http://10.0.2.2:3000; remove once served over https. tools:replace: host app's icon/label win over unityLibrary's -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -26,6 +30,38 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <!-- Unity (UaaL) AR activity comes from unityLibrary's manifest, where it is
+             declared as LAUNCHER. Override here to strip that intent-filter so it does
+             NOT become a second home-screen icon — it's launched internally from the
+             WebView via MethodChannel (T4.4). exported=false: internal launch only. -->
+        <activity
+            android:name="com.unity3d.player.UnityPlayerGameActivity"
+            android:exported="false"
+            tools:node="merge"
+            tools:replace="android:exported">
+            <intent-filter tools:node="removeAll" />
+        </activity>
+
+        <!-- The AR activity we actually launch (T4.5). It runs in its OWN task (singleTask
+             + default affinity, separate from MainActivity's affinity=""), and on back we
+             moveTaskToBack() to reveal the Flutter host WITHOUT destroying Unity (which
+             would crash — Unity can't be unloaded/reloaded in-process). excludeFromRecents:
+             that separate task must NOT appear as its own card in the recent-apps overview
+             — only MyRSIy should. Mirrors the Unity meta-data the player needs (lib_name=game). -->
+        <activity
+            android:name=".DarsiUnityActivity"
+            android:exported="false"
+            android:screenOrientation="portrait"
+            android:launchMode="singleTask"
+            android:excludeFromRecents="true"
+            android:hardwareAccelerated="false"
+            android:resizeableActivity="true"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale|layoutDirection|density"
+            android:theme="@style/BaseUnityGameActivityTheme">
+            <meta-data android:name="unityplayer.UnityActivity" android:value="true" />
+            <meta-data android:name="android.app.lib_name" android:value="game" />
+        </activity>
+
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data
