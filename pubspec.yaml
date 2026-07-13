@@ -46,6 +46,18 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Generates the Android launcher icon (mipmap-*/ic_launcher.png) dari
+  # assets/app_logo.png — jalankan: dart run flutter_launcher_icons
+  flutter_launcher_icons: ^0.14.1
+
+# App launcher icon (bukan aset in-app). android:icon di manifest tetap
+# @mipmap/ic_launcher — tool ini cuma me-replace PNG mipmap-nya di tempat.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/app_logo.png"
+  min_sdk_android: 29
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
