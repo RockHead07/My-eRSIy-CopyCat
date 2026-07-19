@@ -61,7 +61,7 @@ class SectionHeader extends StatelessWidget {
             ],
           ),
         ),
-        if (trailingWidget != null) trailingWidget,
+        ?trailingWidget,
       ],
     );
   }

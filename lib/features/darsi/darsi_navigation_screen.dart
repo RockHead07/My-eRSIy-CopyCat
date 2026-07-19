@@ -2,9 +2,11 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rs_islam_app/core/constants/app_spacing.dart';
 import 'package:rs_islam_app/core/theme/app_colors.dart';
 import 'package:rs_islam_app/core/theme/app_radius.dart';
+import 'package:rs_islam_app/features/home/presentation/bloc/webview_cubit.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 /// Where the DARSI Next.js webview is served. Defaults to the deployed Vercel
@@ -21,22 +23,48 @@ const String _darsiUrl = String.fromEnvironment(
   defaultValue: 'https://darsi-indoor-navigation.vercel.app/',
 );
 
-class DarsiNavigationScreen extends StatefulWidget {
-  const DarsiNavigationScreen({super.key});
-
-  @override
-  State<DarsiNavigationScreen> createState() => _DarsiNavigationScreenState();
-}
-
 /// Native bridge to the embedded Unity (UaaL) AR module. The Android side
 /// (MainActivity.kt) launches UnityPlayerGameActivity with the payload.
 /// Method name + channel name are the locked contract.
 const _unityChannel = MethodChannel('darsi/unity');
 
-class _DarsiNavigationScreenState extends State<DarsiNavigationScreen> {
+/// Entry point publik layar DARSI.
+///
+/// Membungkus [_DarsiBody] dengan [WebViewCubit] lokal sehingga:
+///  1. Cubit hanya hidup selama layar ini terbuka (auto-dispose).
+///  2. [_DarsiBody] (StatefulWidget) sudah memiliki akses ke Cubit
+///     saat [initState] dipanggil.
+class DarsiNavigationScreen extends StatelessWidget {
+  const DarsiNavigationScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => WebViewCubit(),
+      child: const _DarsiBody(),
+    );
+  }
+}
+
+/// Body aktual layar navigasi indoor DARSI dengan embedded WebView
+/// + Unity AR bridge.
+///
+/// Menggunakan [WebViewCubit] (disediakan oleh [DarsiNavigationScreen]) untuk
+/// mengelola state loading/error WebView. Semua [setState] sudah dihapus —
+/// perubahan UI sepenuhnya dikendalikan oleh state Cubit.
+///
+/// Seluruh logika non-UI (Unity bridge & JS bridge) tetap berada di sini
+/// karena keduanya membutuhkan siklus hidup StatefulWidget
+/// ([initState] / [dispose]).
+class _DarsiBody extends StatefulWidget {
+  const _DarsiBody();
+
+  @override
+  State<_DarsiBody> createState() => _DarsiBodyState();
+}
+
+class _DarsiBodyState extends State<_DarsiBody> {
   late final WebViewController _controller;
-  var _loading = true;
-  var _hasError = false;
 
   @override
   void initState() {
@@ -53,15 +81,12 @@ class _DarsiNavigationScreenState extends State<DarsiNavigationScreen> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) => setState(() {
-            _loading = true;
-            _hasError = false;
-          }),
-          onPageFinished: (_) => setState(() => _loading = false),
-          onWebResourceError: (_) => setState(() {
-            _loading = false;
-            _hasError = true;
-          }),
+          onPageStarted: (_) =>
+              context.read<WebViewCubit>().onPageStarted(),
+          onPageFinished: (_) =>
+              context.read<WebViewCubit>().onPageFinished(),
+          onWebResourceError: (_) =>
+              context.read<WebViewCubit>().onPageError(),
         ),
       )
       ..loadRequest(Uri.parse(_darsiUrl));
@@ -123,6 +148,12 @@ class _DarsiNavigationScreenState extends State<DarsiNavigationScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  void _reload() {
+    // Reset state ke loading lalu muat ulang URL.
+    context.read<WebViewCubit>().resetError();
+    _controller.loadRequest(Uri.parse(_darsiUrl));
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -149,13 +180,18 @@ class _DarsiNavigationScreenState extends State<DarsiNavigationScreen> {
                       top: Radius.circular(AppRadius.xl),
                     ),
                   ),
-                  child: Stack(
-                    children: [
-                      if (!_hasError) WebViewWidget(controller: _controller),
-                      if (_loading && !_hasError)
-                        const Center(child: CircularProgressIndicator()),
-                      if (_hasError) _ErrorView(onRetry: _reload),
-                    ],
+                  child: BlocBuilder<WebViewCubit, WebViewState>(
+                    builder: (context, state) {
+                      return Stack(
+                        children: [
+                          if (!state.hasError)
+                            WebViewWidget(controller: _controller),
+                          if (state.isLoading && !state.hasError)
+                            const Center(child: CircularProgressIndicator()),
+                          if (state.hasError) _ErrorView(onRetry: _reload),
+                        ],
+                      );
+                    },
                   ),
                 ),
               ),
@@ -164,11 +200,6 @@ class _DarsiNavigationScreenState extends State<DarsiNavigationScreen> {
         ),
       ),
     );
-  }
-
-  void _reload() {
-    setState(() => _hasError = false);
-    _controller.loadRequest(Uri.parse(_darsiUrl));
   }
 }
 

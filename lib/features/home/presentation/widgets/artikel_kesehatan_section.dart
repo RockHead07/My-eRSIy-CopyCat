@@ -1,87 +1,99 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rs_islam_app/core/constants/app_spacing.dart';
 import 'package:rs_islam_app/core/theme/app_colors.dart';
 import 'package:rs_islam_app/core/theme/app_radius.dart';
 import 'package:rs_islam_app/core/widgets/section_header.dart';
+import 'package:rs_islam_app/features/home/presentation/bloc/artikel_cubit.dart';
 
-class ArtikelKesehatanSection extends StatefulWidget {
+/// Section Artikel Kesehatan di halaman Home.
+///
+/// Menggunakan [ArtikelCubit] (disediakan secara lokal via [BlocProvider])
+/// untuk mengelola tab kategori aktif. [setState] sudah dihapus sepenuhnya.
+class ArtikelKesehatanSection extends StatelessWidget {
   const ArtikelKesehatanSection({super.key});
 
-  @override
-  State<ArtikelKesehatanSection> createState() => _ArtikelKesehatanSectionState();
-}
-
-class _ArtikelKesehatanSectionState extends State<ArtikelKesehatanSection> {
-  var _selectedCategory = 0;
   static const _categories = ['Semua', 'Kesehatan', 'Kesehatan Umum'];
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: AppSpacing.s(context, AppSpacing.pageHorizontal),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SectionHeader(
-            title: 'Artikel Kesehatan',
-            subtitle: 'Tips & informasi terkini',
-            icon: Icons.article_outlined,
-            trailing: _LihatSemuaButton(onTap: () {}),
-          ),
-          SizedBox(height: AppSpacing.s(context, 14)),
-          SizedBox(
-            height: AppSpacing.s(context, 34),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _categories.length,
-              separatorBuilder: (context, index) =>
-                  SizedBox(width: AppSpacing.s(context, 8)),
-              itemBuilder: (context, index) {
-                final active = index == _selectedCategory;
-                return ChoiceChip(
-                  label: Text(_categories[index]),
-                  selected: active,
-                  onSelected: (_) => setState(() => _selectedCategory = index),
-                  labelStyle: TextStyle(
-                    fontSize: AppSpacing.s(context, 11),
-                    color: active ? Colors.white : AppColors.brandGreenDark,
-                    fontWeight: FontWeight.w600,
+    return BlocProvider(
+      create: (_) => ArtikelCubit(),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: AppSpacing.s(context, AppSpacing.pageHorizontal),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SectionHeader(
+              title: 'Artikel Kesehatan',
+              subtitle: 'Tips & informasi terkini',
+              icon: Icons.article_outlined,
+              trailing: _LihatSemuaButton(onTap: () {}),
+            ),
+            SizedBox(height: AppSpacing.s(context, 14)),
+            // --- Chip kategori ---
+            BlocBuilder<ArtikelCubit, ArtikelState>(
+              builder: (context, state) {
+                return SizedBox(
+                  height: AppSpacing.s(context, 34),
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: _categories.length,
+                    separatorBuilder: (context, index) =>
+                        SizedBox(width: AppSpacing.s(context, 8)),
+                    itemBuilder: (context, index) {
+                      final active = index == state.selectedCategory;
+                      return ChoiceChip(
+                        label: Text(_categories[index]),
+                        selected: active,
+                        onSelected: (_) =>
+                            context.read<ArtikelCubit>().selectCategory(index),
+                        labelStyle: TextStyle(
+                          fontSize: AppSpacing.s(context, 11),
+                          color: active ? Colors.white : AppColors.brandGreenDark,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        selectedColor: AppColors.brandGreenDark,
+                        backgroundColor: AppColors.surfaceWhite,
+                        side: BorderSide(
+                          color: active
+                              ? AppColors.brandGreenDark
+                              : AppColors.pillMintText,
+                        ),
+                        showCheckmark: false,
+                        padding: EdgeInsets.symmetric(
+                            horizontal: AppSpacing.s(context, 8)),
+                      );
+                    },
                   ),
-                  selectedColor: AppColors.brandGreenDark,
-                  backgroundColor: AppColors.surfaceWhite,
-                  side: BorderSide(
-                    color: active ? AppColors.brandGreenDark : AppColors.pillMintText,
-                  ),
-                  showCheckmark: false,
-                  padding: EdgeInsets.symmetric(horizontal: AppSpacing.s(context, 8)),
                 );
               },
             ),
-          ),
-          SizedBox(height: AppSpacing.s(context, 14)),
-          _FeaturedArticleCard(onTap: () {}),
-          SizedBox(height: AppSpacing.s(context, 12)),
-          SizedBox(
-            height: AppSpacing.s(context, 170),
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _placeholderArticles.length,
-              separatorBuilder: (context, index) =>
-                  SizedBox(width: AppSpacing.s(context, 10)),
-              itemBuilder: (context, index) {
-                final article = _placeholderArticles[index];
-                return _ArticleCard(
-                  title: article.title,
-                  category: article.category,
-                  imageAsset: article.imageAsset,
-                  onTap: () {},
-                );
-              },
+            SizedBox(height: AppSpacing.s(context, 14)),
+            _FeaturedArticleCard(onTap: () {}),
+            SizedBox(height: AppSpacing.s(context, 12)),
+            SizedBox(
+              height: AppSpacing.s(context, 170),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _placeholderArticles.length,
+                separatorBuilder: (context, index) =>
+                    SizedBox(width: AppSpacing.s(context, 10)),
+                itemBuilder: (context, index) {
+                  final article = _placeholderArticles[index];
+                  return _ArticleCard(
+                    title: article.title,
+                    category: article.category,
+                    imageAsset: article.imageAsset,
+                    onTap: () {},
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
