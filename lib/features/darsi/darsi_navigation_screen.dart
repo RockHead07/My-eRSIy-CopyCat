@@ -105,6 +105,7 @@ class _DarsiBodyState extends State<_DarsiBody> {
   }
 
   void _onDeepLink(Uri uri) {
+    debugPrint('DARSI deeplink<-webxr: $uri');
     if (uri.scheme != 'myrsiy' || uri.host != 'ar-done') return;
     // Reuse the SAME resume path as the Unity flow — deep-link is just a second producer
     // of window.onARSessionClosed (defined by the Next.js side, T3.5).
