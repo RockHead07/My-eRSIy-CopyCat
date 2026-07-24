@@ -29,6 +29,16 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- Return path from the WebXR AR page (Chrome Custom Tab) via
+                 intent://ar-done#Intent;scheme=myrsiy;package=...;end. MainActivity is
+                 singleTop, so this arrives via onNewIntent while CopyCat is alive behind
+                 the tab; app_links delivers it to Dart (darsi_navigation_screen). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="myrsiy" android:host="ar-done"/>
+            </intent-filter>
         </activity>
         <!-- Unity (UaaL) AR activity comes from unityLibrary's manifest, where it is
              declared as LAUNCHER. Override here to strip that intent-filter so it does

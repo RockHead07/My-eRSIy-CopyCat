@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -65,6 +67,8 @@ class _DarsiBody extends StatefulWidget {
 
 class _DarsiBodyState extends State<_DarsiBody> {
   late final WebViewController _controller;
+  final AppLinks _appLinks = AppLinks();
+  StreamSubscription<Uri>? _linkSub;
 
   @override
   void initState() {
@@ -93,6 +97,21 @@ class _DarsiBodyState extends State<_DarsiBody> {
 
     // Receive Unity (UaaL) -> Flutter events on the same channel (T4.5).
     _unityChannel.setMethodCallHandler(_onUnityEvent);
+
+    // Receive the WebXR AR page's return deep-link (myrsiy://ar-done). The Custom Tab
+    // sits on top of this live screen, so the warm uriLinkStream (onNewIntent) is enough;
+    // getInitialLink not needed — CopyCat is never cold-started by this link.
+    _linkSub = _appLinks.uriLinkStream.listen(_onDeepLink);
+  }
+
+  void _onDeepLink(Uri uri) {
+    if (uri.scheme != 'myrsiy' || uri.host != 'ar-done') return;
+    // Reuse the SAME resume path as the Unity flow — deep-link is just a second producer
+    // of window.onARSessionClosed (defined by the Next.js side, T3.5).
+    final payload = jsonEncode(uri.queryParameters); // e.g. {"arrived":"true"}
+    _controller.runJavaScript(
+      'window.onARSessionClosed && window.onARSessionClosed($payload)',
+    );
   }
 
   Future<dynamic> _onUnityEvent(MethodCall call) async {
@@ -111,6 +130,7 @@ class _DarsiBodyState extends State<_DarsiBody> {
   @override
   void dispose() {
     _unityChannel.setMethodCallHandler(null);
+    _linkSub?.cancel();
     super.dispose();
   }
 
