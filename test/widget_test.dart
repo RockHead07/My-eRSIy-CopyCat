@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:rs_islam_app/features/home/presentation/screens/home_screen.dart';
+import 'package:rs_islam_app/main.dart';
 
 void main() {
   testWidgets('HomeScreen renders guest greeting', (tester) async {
     await tester.pumpWidget(
-      const MaterialApp(home: HomeScreen()),
+      const RsIslamApp(),
     );
 
     expect(find.text('Tamu'), findsOneWidget);
