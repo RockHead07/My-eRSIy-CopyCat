@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rs_islam_app/core/bloc/app_bloc_observer.dart';
 import 'package:rs_islam_app/core/theme/app_theme.dart';
+import 'package:rs_islam_app/features/home/presentation/bloc/auth_cubit.dart';
 import 'package:rs_islam_app/features/home/presentation/bloc/navigation_cubit.dart';
 import 'package:rs_islam_app/features/home/presentation/screens/home_screen.dart';
 
@@ -32,6 +33,9 @@ class RsIslamApp extends StatelessWidget {
       providers: [
         BlocProvider<NavigationCubit>(
           create: (_) => NavigationCubit(),
+        ),
+        BlocProvider<AuthCubit>(
+          create: (_) => AuthCubit(),
         ),
       ],
       child: MaterialApp(
