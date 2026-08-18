@@ -87,13 +87,13 @@ class _NavItem extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: AppSpacing.s(context, 6),
-            vertical: AppSpacing.s(context, 8),
+            vertical: AppSpacing.s(context, 6),
           ),
           child: active
               ? Container(
                   padding: EdgeInsets.symmetric(
                     horizontal: AppSpacing.s(context, 14),
-                    vertical: AppSpacing.s(context, 8),
+                    vertical: AppSpacing.s(context, 6),
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.pillMintBg,
