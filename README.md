@@ -54,16 +54,19 @@ This repo solves that: a **"copycat"** — a minimal Flutter host that mimics ju
 
 | Present in this repo | Deliberately absent |
 |---|---|
-| A MyRSIy-styled Home screen (guest, dummy data) | Real MyRSIy auth / login |
-| **Navigasi Indoor** menu item → `DarsiNavigationScreen` | Real MyRSIy backend / API |
-| Embedded **WebView** (DARSI UI, hosted on Vercel) | Other MyRSIy features (appointments, etc.) |
-| Embedded **Unity as a Library** (`:unityLibrary`) + AR launcher | The real MyRSIy UI (we don't have it) |
-| Two-way **bridge** Flutter ⇄ Kotlin ⇄ Unity ⇄ WebView | |
+| A MyRSIy-styled Home screen (reactive `AuthCubit`, dummy data) | Real MyRSIy backend / production API |
+| **Infinite Hero Carousel** (3 hospital banners, auto-slide 5s) | Full payment gateway / billing live API |
+| **Navigasi Indoor** menu item → `DarsiNavigationScreen` | Other MyRSIy features (appointments live booking) |
+| Embedded **WebView** (DARSI UI, hosted on Vercel) | The real MyRSIy UI source (we don't have it) |
+| Embedded **Profile / Auth WebView** (`ProfileScreen` in Tab Navbar) | |
+| Embedded **Unity as a Library** (`:unityLibrary`) + AR launcher | |
+| Two-way **bridge** Flutter ⇄ Kotlin ⇄ Unity ⇄ WebView & `ProfileBridge` | |
 
 ---
 
 ## 🔀 The integration flow under test
 
+### 1. DARSI AR Navigation Flow
 ```
 MyRSIy (copycat, Flutter)
         │  tap "Navigasi Indoor"
@@ -82,7 +85,21 @@ DarsiUnityActivity ◄──────────────┘  Intent-extr
 WebView.onARSessionClosed(payload)   ← moveTaskToBack, Unity stays resident
 ```
 
-Architecture decisions live in the Unity repo (`docs/DECISIONS.md`, `docs/INTEGRATION.md`, `docs/ROADMAP.md` Fase 4).
+### 2. Profile / Auth Bridge Flow (Supabase Ready)
+```
+HomeScreen (Tab 3: Profil)
+        │
+        ▼
+ProfileScreen ──────────► Embedded WebView (Next.js / Supabase Auth)
+        │                        │  User login/register via Supabase
+        │  ProfileBridge         ▼
+        │  (postMessage)  window.ProfileBridge.postMessage({ event: 'LOGIN_SUCCESS', user: { fullName: '...' } })
+        ▼
+AuthCubit.login(fullName)
+        │  emits new AuthState
+        ▼
+HomeHeader (Reactively displays the User's full name instead of "Tamu")
+```
 
 ---
 
@@ -90,11 +107,11 @@ Architecture decisions live in the Unity repo (`docs/DECISIONS.md`, `docs/INTEGR
 
 | Layer | Technology | Role |
 |---|---|---|
-| Host app | **Flutter · Dart** | MyRSIy stand-in shell, WebView container, MethodChannel |
+| Host app | **Flutter · Dart** | MyRSIy stand-in shell, WebView container, MethodChannel, `flutter_bloc` |
 | Native bridge | **Kotlin · Android** | `MainActivity`, `DarsiUnityActivity`, `UnityBridge` (Flutter ⇄ Unity) |
 | AR engine | **Unity (UaaL)** | Exported as an Android library, embedded as `:unityLibrary` |
 | Build | **Gradle (AGP 9) · IL2CPP** | Merges Unity + Flutter, ABI `arm64-v8a` |
-| DARSI UI | **Next.js (WebView)** | Hosted externally (Vercel), not part of this repo |
+| DARSI UI & Auth | **Next.js (WebView)** | Hosted externally (Vercel) + Supabase Auth integration |
 
 ---
 
@@ -102,11 +119,16 @@ Architecture decisions live in the Unity repo (`docs/DECISIONS.md`, `docs/INTEGR
 
 ```bash
 flutter pub get
+flutter test         # Run unit & widget tests suite
 flutter run          # debug, onto a physical Android device (ARCore required)
 ```
 
 > ⚠️ **A physical ARCore-capable Android device is required** — Unity AR does not run on an emulator.
 > Targets `minSdk 29`, ABI `arm64-v8a`, portrait-locked.
+
+### Environment Overrides (`--dart-define`)
+- `--dart-define=DARSI_URL=http://localhost:3000/` (override DARSI indoor nav WebView URL)
+- `--dart-define=PROFILE_AUTH_URL=http://localhost:3000/profile` (override Profile/Auth WebView URL)
 
 ### After re-exporting Unity
 
@@ -116,17 +138,18 @@ flutter run          # debug, onto a physical Android device (ARCore required)
 ./tool/reintegrate-unity.ps1
 ```
 
-This script + the patched aar (`tool/unity-patches/`) are the **only source of truth** for reproducing the Unity embed. The Unity project itself lives in a separate repo (DARSI Unity).
-
 ---
 
 ## 📦 Packages
 
 | Package | For |
 |---|---|
-| `webview_flutter` | Container for the DARSI WebView UI |
+| `webview_flutter` | Container for the DARSI & Profile WebView UI |
+| `flutter_bloc` | BLoC / Cubit state management (`AuthCubit`, `NavigationCubit`, `WebViewCubit`) |
+| `equatable` | Value equality for immutable BLoC states |
 | `google_fonts` | Poppins typography (MyRSIy style) |
-| `smooth_page_indicator` | Home banner carousel dots |
+| `smooth_page_indicator` | Hero banner carousel dots (`ExpandingDotsEffect`) |
+| `app_links` | Deep linking return path from WebXR AR |
 
 ---
 
@@ -134,10 +157,16 @@ This script + the patched aar (`tool/unity-patches/`) are the **only source of t
 
 ```
 lib/
-  core/theme|constants|widgets/   # AppColors, AppRadius, AppSpacing, SectionHeader
-  features/home/                  # MyRSIy-styled Home (dummy data)
-  features/darsi/
-    darsi_navigation_screen.dart  # DARSI entry: green header + WebView + AR return path
+  core/
+    bloc/                         # AppBlocObserver
+    constants/                    # AppSpacing (402px baseline)
+    theme/                        # AppColors, AppRadius, AppTheme
+    widgets/                      # SectionHeader
+  features/
+    home/                         # MyRSIy-styled Home (IndexedStack tabs, banner carousel, menu grid, articles)
+      presentation/bloc/          # AuthCubit, NavigationCubit, WebViewCubit, ArtikelCubit
+    profile/                      # Profile & Auth WebView screen with ProfileBridge
+    darsi/                        # DARSI entry: green header + WebView + AR return path
 android/
   app/src/main/kotlin/.../        # MainActivity, DarsiUnityActivity, UnityBridge
   unityLibrary/  shared/          # (git-ignored) Unity export output
@@ -151,3 +180,4 @@ tool/
 <div align="center">
 <sub>Internal experiment repo · mimics <a href="https://play.google.com/store/apps/details?id=id.kksoft.myrsiy&hl=id">MyRSIy</a> only as a host harness for testing the DARSI integration.</sub>
 </div>
+
