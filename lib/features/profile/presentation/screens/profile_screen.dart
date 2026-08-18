@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rs_islam_app/core/constants/app_spacing.dart';
 import 'package:rs_islam_app/core/theme/app_colors.dart';
 import 'package:rs_islam_app/core/theme/app_radius.dart';
+import 'package:rs_islam_app/features/home/presentation/bloc/auth_cubit.dart';
 import 'package:rs_islam_app/features/home/presentation/bloc/webview_cubit.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -65,8 +66,24 @@ class _ProfileBodyState extends State<_ProfileBody> {
     debugPrint('ProfileBridge message: ${message.message}');
     try {
       final data = jsonDecode(message.message) as Map<String, dynamic>;
-      final event = data['event'] ?? data['action'];
-      debugPrint('Profile auth event received: $event');
+      final event = (data['event'] ?? data['action'] ?? '').toString().toUpperCase();
+      if (event == 'LOGIN_SUCCESS' || event == 'REGISTER_SUCCESS') {
+        final user = data['user'] as Map<String, dynamic>? ?? {};
+        final fullName = user['fullName'] ?? user['name'] ?? data['fullName'] ?? 'Pengguna';
+        final email = user['email'] as String?;
+        final token = data['token'] as String?;
+        if (mounted) {
+          context.read<AuthCubit>().login(
+            fullName: fullName.toString(),
+            email: email,
+            token: token,
+          );
+        }
+      } else if (event == 'LOGOUT') {
+        if (mounted) {
+          context.read<AuthCubit>().logout();
+        }
+      }
     } catch (e) {
       debugPrint('ProfileBridge decode error: $e');
     }

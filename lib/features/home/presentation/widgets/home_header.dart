@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rs_islam_app/core/constants/app_spacing.dart';
 import 'package:rs_islam_app/core/theme/app_colors.dart';
+import 'package:rs_islam_app/features/home/presentation/bloc/auth_cubit.dart';
 
 class HomeHeader extends StatelessWidget {
   const HomeHeader({super.key});
@@ -86,24 +88,30 @@ class HomeHeader extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: AppSpacing.s(context, 4)),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          'Tamu',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                            fontSize: AppSpacing.s(context, 28),
+                  BlocBuilder<AuthCubit, AuthState>(
+                    builder: (context, state) {
+                      return Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              state.fullName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: AppSpacing.s(context, 28),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                      Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: AppColors.accentYellow,
-                        size: AppSpacing.s(context, 28),
-                      ),
-                    ],
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: AppColors.accentYellow,
+                            size: AppSpacing.s(context, 28),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
