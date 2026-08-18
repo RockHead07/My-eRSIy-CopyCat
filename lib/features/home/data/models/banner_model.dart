@@ -16,24 +16,24 @@ class BannerModel {
 
 const homeBanners = <BannerModel>[
   BannerModel(
-    imageAsset: 'assets/images/banner_hospital.png',
+    imageAsset: 'assets/images/heroCarousel1.jpeg',
     title: 'Kunjungi kami sesuai jam yang ditetapkan',
     morningHours: 'PAGI 10.00 - 12.00 WIB',
     afternoonHours: 'SORE 16.00 - 18.00 WIB',
     fridayNote: "Kecuali Jum'at pagi 09.00 - 11.00 WIB",
   ),
   BannerModel(
-    imageAsset: 'assets/images/banner_hospital.png',
-    title: 'Layanan IGD 24 Jam siap melayani Anda',
-    morningHours: 'IGD BUKA 24 JAM',
-    afternoonHours: 'HUBUNGI CALL CENTER',
-    fridayNote: 'Informasi lengkap di website resmi',
+    imageAsset: 'assets/images/heroCarousel2.jpeg',
+    title: 'Melayani BPJS dan Non-BPJS',
+    morningHours: 'INFORMASI LEBIH LANJUT',
+    afternoonHours: 'CHAT WA: 0814-0090-6200',
+    fridayNote: 'Layanan Sepenuh Hati',
   ),
   BannerModel(
-    imageAsset: 'assets/images/banner_hospital.png',
-    title: 'Medical Checkup & Vaksinasi tersedia',
-    morningHours: 'DAFTAR ONLINE',
-    afternoonHours: 'KONSULTASI DOKTER',
-    fridayNote: 'Promo spesial bulan ini',
+    imageAsset: 'assets/images/heroCarousel3.jpeg',
+    title: 'Nomor RSI Baru, Akses Informasi Lebih Mudah',
+    morningHours: 'LAYANAN INFORMASI',
+    afternoonHours: 'CHAT WA: 0821-3322-2247',
+    fridayNote: 'Hubungi via WhatsApp',
   ),
 ];
