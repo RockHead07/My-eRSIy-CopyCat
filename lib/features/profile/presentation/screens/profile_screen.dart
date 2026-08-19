@@ -36,6 +36,13 @@ class _ProfileBody extends StatefulWidget {
 class _ProfileBodyState extends State<_ProfileBody> {
   late final WebViewController _controller;
 
+  // Layar auth (login/register/lupa password) berdiri sendiri di WebView
+  // dengan heading-nya sendiri -- header hijau native jadi dobel di atasnya.
+  // Disembunyikan berdasar path URL WebView saat ini, bukan cuma di /profile.
+  bool _hideHeader = false;
+
+  bool _isAuthPath(String url) => (Uri.tryParse(url)?.path ?? '').startsWith('/auth/');
+
   @override
   void initState() {
     super.initState();
@@ -48,11 +55,15 @@ class _ProfileBodyState extends State<_ProfileBody> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (_) {
-            if (mounted) context.read<WebViewCubit>().onPageStarted();
+          onPageStarted: (url) {
+            if (!mounted) return;
+            context.read<WebViewCubit>().onPageStarted();
+            setState(() => _hideHeader = _isAuthPath(url));
           },
-          onPageFinished: (_) {
-            if (mounted) context.read<WebViewCubit>().onPageFinished();
+          onPageFinished: (url) {
+            if (!mounted) return;
+            context.read<WebViewCubit>().onPageFinished();
+            setState(() => _hideHeader = _isAuthPath(url));
           },
           onWebResourceError: (_) {
             if (mounted) context.read<WebViewCubit>().onPageError();
@@ -102,8 +113,9 @@ class _ProfileBodyState extends State<_ProfileBody> {
 
   @override
   Widget build(BuildContext context) {
+    final showHeader = !_hideHeader;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: showHeader ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, _) async {
@@ -111,32 +123,36 @@ class _ProfileBodyState extends State<_ProfileBody> {
           await _handleBack();
         },
         child: Scaffold(
-          backgroundColor: AppColors.headerGradientEnd,
+          backgroundColor: showHeader ? AppColors.headerGradientEnd : AppColors.pageBackground,
           body: Column(
             children: [
-              const _ProfileHeader(),
+              if (showHeader) const _ProfileHeader(),
               Expanded(
-                child: Container(
-                  width: double.infinity,
-                  clipBehavior: Clip.antiAlias,
-                  decoration: const BoxDecoration(
-                    color: AppColors.pageBackground,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(AppRadius.xl),
+                child: SafeArea(
+                  top: !showHeader,
+                  bottom: false,
+                  child: Container(
+                    width: double.infinity,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: AppColors.pageBackground,
+                      borderRadius: showHeader
+                          ? const BorderRadius.vertical(top: Radius.circular(AppRadius.xl))
+                          : BorderRadius.zero,
                     ),
-                  ),
-                  child: BlocBuilder<WebViewCubit, WebViewState>(
-                    builder: (context, state) {
-                      return Stack(
-                        children: [
-                          if (!state.hasError)
-                            WebViewWidget(controller: _controller),
-                          if (state.isLoading && !state.hasError)
-                            const Center(child: CircularProgressIndicator()),
-                          if (state.hasError) _ErrorView(onRetry: _reload),
-                        ],
-                      );
-                    },
+                    child: BlocBuilder<WebViewCubit, WebViewState>(
+                      builder: (context, state) {
+                        return Stack(
+                          children: [
+                            if (!state.hasError)
+                              WebViewWidget(controller: _controller),
+                            if (state.isLoading && !state.hasError)
+                              const Center(child: CircularProgressIndicator()),
+                            if (state.hasError) _ErrorView(onRetry: _reload),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
               ),
