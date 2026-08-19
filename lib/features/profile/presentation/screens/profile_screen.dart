@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -40,6 +41,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
   // dengan heading-nya sendiri -- header hijau native jadi dobel di atasnya.
   // Disembunyikan berdasar path URL WebView saat ini, bukan cuma di /profile.
   bool _hideHeader = false;
+  Timer? _urlPoll;
 
   bool _isAuthPath(String url) => (Uri.tryParse(url)?.path ?? '').startsWith('/auth/');
 
@@ -55,15 +57,11 @@ class _ProfileBodyState extends State<_ProfileBody> {
       )
       ..setNavigationDelegate(
         NavigationDelegate(
-          onPageStarted: (url) {
-            if (!mounted) return;
-            context.read<WebViewCubit>().onPageStarted();
-            setState(() => _hideHeader = _isAuthPath(url));
+          onPageStarted: (_) {
+            if (mounted) context.read<WebViewCubit>().onPageStarted();
           },
-          onPageFinished: (url) {
-            if (!mounted) return;
-            context.read<WebViewCubit>().onPageFinished();
-            setState(() => _hideHeader = _isAuthPath(url));
+          onPageFinished: (_) {
+            if (mounted) context.read<WebViewCubit>().onPageFinished();
           },
           onWebResourceError: (_) {
             if (mounted) context.read<WebViewCubit>().onPageError();
@@ -71,6 +69,22 @@ class _ProfileBodyState extends State<_ProfileBody> {
         ),
       )
       ..loadRequest(Uri.parse(_profileAuthUrl));
+
+    // Next.js router.push (login <-> register <-> lupa password) is a
+    // same-document history.pushState navigation -- onPageStarted/onPageFinished
+    // never fire for it, so the only reliable signal is polling the live URL.
+    _urlPoll = Timer.periodic(const Duration(milliseconds: 350), (_) async {
+      final url = await _controller.currentUrl();
+      if (!mounted || url == null) return;
+      final hide = _isAuthPath(url);
+      if (hide != _hideHeader) setState(() => _hideHeader = hide);
+    });
+  }
+
+  @override
+  void dispose() {
+    _urlPoll?.cancel();
+    super.dispose();
   }
 
   void _onWebMessage(JavaScriptMessage message) {
